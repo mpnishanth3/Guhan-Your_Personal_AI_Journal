@@ -1,8 +1,50 @@
-node_modules/
-.next/
-coverage/
-.DS_Store
-*.log
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Next.js Build & Production Outputs
+/.next/
+/out/
+/build
+dist/
+
+# TypeScript Incremental Build Cache
+*.tsbuildinfo
+
+# Testing & Coverage
+/coverage
+
+# Environment Variables & Secrets (CRITICAL)
 .env*
 !.env.example
-*.tsbuildinfo
+*.pem
+
+# Debug Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+
+# Editor & Operating System Metadata
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+.vscode/
+.idea/
+
+# Temporary Scratch & Test Files
+scratch/
+test-*.js
+test-*.ts
+
+# Vercel & Cloud Deploy Artifacts
+.vercel
+.firebase/
