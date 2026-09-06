@@ -1,0 +1,23 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Zero-Trust media isolation for Guhan journal attachments
+    match /users/{userId}/media/{fileName} {
+      // Allow read, create, and delete strictly to the authenticated owner
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow create strictly if authenticated owner, valid media MIME type, and <= 5MB (5242880 bytes)
+      allow create: if request.auth != null && request.auth.uid == userId
+        && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'))
+        && request.resource.size <= 5242880;
+
+      // Explicitly block updates to enforce immutable journal entries
+      allow update: if false;
+    }
+
+    // Deny access to any other paths by default
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
