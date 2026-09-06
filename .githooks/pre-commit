@@ -1,0 +1,10 @@
+#!/bin/sh
+# Guhan Sanctuary — Pre-Commit Security Hook
+echo "🔍 Running pre-commit security scan on staged files..."
+node scripts/security-check.mjs --staged
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "🛑 Pre-commit security check failed! Commit aborted."
+  exit $EXIT_CODE
+fi

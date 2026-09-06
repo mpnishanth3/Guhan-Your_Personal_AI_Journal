@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "clean": "next clean"
+    "clean": "next clean",
+    "security:check": "node scripts/security-check.mjs --full",
+    "security:staged": "node scripts/security-check.mjs --staged",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "@google-cloud/secret-manager": "^7.0.0",

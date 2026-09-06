@@ -1,0 +1,12 @@
+#!/bin/sh
+# Guhan Sanctuary — Pre-Push Security & Build Hook
+# Runs prior to git push and Cloud Run redeployment triggers
+echo "🛡️ Running pre-push security tests & build verification..."
+node scripts/security-check.mjs --full
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+  echo "🛑 Pre-push security verification failed! Push aborted."
+  echo "   Resolve the reported security/typecheck failures before redeploying."
+  exit $EXIT_CODE
+fi
