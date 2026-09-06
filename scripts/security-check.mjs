@@ -105,18 +105,16 @@ try {
       regex: /"private_key"\s*:\s*"-----BEGIN/g,
     },
     {
-      name: 'Gemini Private API Key assignment',
-      regex: /GEMINI_API_KEY\s*=\s*['"][A-Za-z0-9_\-\.]{25,}['"]/g,
-      // Allow placeholder examples
+      name: 'Gemini AI Studio API Key (AQ....)',
+      regex: /AQ\.[A-Za-z0-9_\-\.]{25,}/g,
       filter: (match) => !match.includes('YOUR_') && !match.includes('placeholder'),
     },
     {
-      name: 'Generic API Secret token',
-      regex: /(?:secret|api_key|password)\s*[:=]\s*['"][A-Za-z0-9_\-\.]{32,}['"]/gi,
+      name: 'Hardcoded API Key / Secret assignment',
+      regex: /(?:GEMINI_API_KEY|API_KEY|SECRET_KEY|PRIVATE_KEY)\s*[:=]\s*['"][A-Za-z0-9_\-\.]{15,}['"]/gi,
       filter: (match, file) => {
-        // Exempt public client config in firebase-applet-config.json
         if (file.includes('firebase-applet-config.json') || file.includes('package-lock.json')) return false;
-        if (match.includes('YOUR_') || match.includes('placeholder')) return false;
+        if (match.includes('YOUR_') || match.includes('placeholder') || match.includes('process.env')) return false;
         return true;
       },
     },
