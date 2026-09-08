@@ -338,15 +338,15 @@ export default function JournalPage() {
         </div>
       )}
 
-      <main className="flex-1 max-w-4xl w-full mx-auto p-8 flex flex-col">
-        <header className="mb-8">
+      <main className="flex-1 max-w-4xl w-full mx-auto p-4 sm:p-6 md:p-8 flex flex-col">
+        <header className="mb-6 sm:mb-8">
           <div className="flex flex-wrap items-center gap-3 mb-3">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <ShieldCheck className="w-3.5 h-3.5" /> Zero-Trust Privacy Shield
             </div>
           </div>
 
-          <h1 className="text-3xl sm:text-4xl font-light tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-slate-100">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-light tracking-tight mb-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-slate-100">
             Guhan — Your Personal AI Sanctuary
           </h1>
           <p className="text-slate-400 text-sm sm:text-base leading-relaxed">
@@ -771,7 +771,7 @@ export default function JournalPage() {
             </div>
 
             {/* Discrete 1-10 selector buttons */}
-            <div className="grid grid-cols-10 gap-1.5 sm:gap-2">
+            <div className="grid grid-cols-5 sm:grid-cols-10 gap-1.5 sm:gap-2">
               {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
                 const isSelected = manualMoodScore === num;
                 return (

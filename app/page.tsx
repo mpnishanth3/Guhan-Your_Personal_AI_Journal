@@ -34,13 +34,13 @@ export default function Home() {
 
   return (
     <div suppressHydrationWarning className="flex flex-col items-center justify-center min-h-screen bg-transparent text-[#e2e8f0] p-4 font-sans">
-      <div className="max-w-md w-full bg-[#0a0a0c]/85 backdrop-blur-md rounded-3xl shadow-2xl border border-white/10 p-10 text-center relative overflow-hidden">
+      <div className="max-w-md w-full bg-[#0a0a0c]/85 backdrop-blur-md rounded-3xl shadow-2xl border border-white/10 p-6 sm:p-10 text-center relative overflow-hidden">
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
         <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
         <div className="relative z-10 flex flex-col items-center">
-          <img src="/logo.png" alt="Guhan Shield Logo" className="w-24 h-24 mb-6 object-contain drop-shadow-[0_0_30px_rgba(99,102,241,0.35)]" />
-          <h1 className="text-4xl font-light tracking-tight leading-[1.1] mb-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Guhan</h1>
+          <img src="/logo.png" alt="Guhan Shield Logo" className="w-20 h-20 sm:w-24 sm:h-24 mb-6 object-contain drop-shadow-[0_0_30px_rgba(99,102,241,0.35)]" />
+          <h1 className="text-3xl sm:text-4xl font-light tracking-tight leading-[1.1] mb-2 text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Guhan</h1>
           <p className="text-xs font-mono text-indigo-300 uppercase tracking-widest mb-4">Powered by Gemini</p>
           <p className="text-base text-slate-400 mb-10 leading-relaxed">Secure, intelligent, and entirely yours.</p>
 
