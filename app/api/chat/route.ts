@@ -33,21 +33,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing or invalid "userId".' }, { status: 400 });
     }
 
-    let apiKey: string;
-    try {
-      apiKey = process.env.GEMINI_API_KEY || (await accessSecret('GEMINI_API_KEY'));
-    } catch (e: any) {
-      console.error('Secret Manager Error:', e);
-      return NextResponse.json({ error: 'Failed to retrieve AI credentials' }, { status: 500 });
-    }
+    let project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT;
+    const location = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
 
-    if (!apiKey) {
-      return NextResponse.json({ error: 'AI credentials missing or unavailable' }, { status: 500 });
+    if (!project) {
+      try {
+        project = await accessSecret('GOOGLE_CLOUD_PROJECT');
+      } catch (e: any) {
+        // ignore
+      }
     }
 
     const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+      vertexai: true,
+      project: project || undefined,
+      location: location,
     });
 
     // 1. Resolve user local time, date, and timezone offset
@@ -264,12 +264,10 @@ ${formattedContext || 'No past entries provided.'}`;
     };
 
     let responseData: any = null;
+    let lastError: any = null;
     const models = [
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
-      'gemini-3.6-flash',
+      'gemini-2.5-flash',
       'gemini-3.5-flash',
-      'gemini-flash-latest',
     ];
 
     for (const model of models) {
@@ -286,15 +284,36 @@ ${formattedContext || 'No past entries provided.'}`;
         responseData = JSON.parse(response.text || '{}');
         if (responseData && responseData.text) break;
       } catch (err: any) {
+        lastError = err;
         console.warn(`Chat model ${model} attempt warning:`, err?.message || err);
       }
     }
 
     if (!responseData) {
-      // Fallback
+      const errStr = String(lastError?.message || lastError || '');
+      let fallbackText = 'I am here with you in the sanctuary. How can I help you reflect today?';
+
+      if (
+        errStr.includes('credits are depleted') ||
+        errStr.includes('prepayment') ||
+        errStr.includes('RESOURCE_EXHAUSTED') ||
+        lastError?.status === 'RESOURCE_EXHAUSTED' ||
+        lastError?.code === 429
+      ) {
+        fallbackText =
+          '⚠️ Google Gemini credits depleted: Your AI Studio prepayment credits for this project have run out (429 RESOURCE_EXHAUSTED). Please top up your project or update GEMINI_API_KEY at https://aistudio.google.com/ to resume reflections.';
+      } else if (
+        errStr.includes('API_KEY_INVALID') ||
+        errStr.includes('API key not valid') ||
+        errStr.includes('unregistered')
+      ) {
+        fallbackText =
+          '⚠️ Gemini API key invalid: Please check the GEMINI_API_KEY configured in your environment.';
+      }
+
       responseData = {
         is_reminder: false,
-        text: 'I am here with you in the sanctuary. How can I help you reflect today?',
+        text: fallbackText,
         reminder: null,
       };
     }
@@ -405,9 +424,22 @@ ${formattedContext || 'No past entries provided.'}`;
     if (error?.code) {
       console.error('[CHAT API FIREBASE ERROR CODE]:', error.code);
     }
+    const errStr = String(error?.message || error || '');
+    let fallbackText = 'I am here with you in the sanctuary. How can I help you reflect today?';
+    if (
+      errStr.includes('credits are depleted') ||
+      errStr.includes('prepayment') ||
+      errStr.includes('RESOURCE_EXHAUSTED') ||
+      error?.status === 'RESOURCE_EXHAUSTED' ||
+      error?.code === 429
+    ) {
+      fallbackText =
+        '⚠️ Google Gemini credits depleted: Your AI Studio prepayment credits for this project have run out (429 RESOURCE_EXHAUSTED). Please top up your project or update GEMINI_API_KEY at https://aistudio.google.com/ to resume reflections.';
+    }
+
     return NextResponse.json({
       success: true,
-      text: 'I am here with you in the sanctuary. How can I help you reflect today?',
+      text: fallbackText,
       isReminder: false,
       reminder: null,
     });

@@ -36,9 +36,10 @@ async function generateContentWithFallback(
   config?: any,
   prefer15Flash = false
 ) {
-  const models = prefer15Flash
-    ? ['gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-3.6-flash', 'gemini-3.5-flash']
-    : ['gemini-3.6-flash', 'gemini-1.5-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+  const models = [
+    'gemini-2.5-flash',
+    'gemini-3.5-flash',
+  ];
 
   let lastError = null;
 
@@ -89,22 +90,22 @@ export async function POST(req: Request) {
     }
 
     // 3. Dynamic Secret Retrieval
-    let apiKey: string;
-    try {
-      apiKey = process.env.GEMINI_API_KEY || (await accessSecret('GEMINI_API_KEY'));
-    } catch (e: any) {
-      console.error('Secret Manager Error:', e);
-      return NextResponse.json({ error: 'Failed to retrieve AI credentials' }, { status: 500 });
-    }
+    let project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT;
+    const location = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
 
-    if (!apiKey) {
-      return NextResponse.json({ error: 'AI credentials missing or unavailable' }, { status: 500 });
+    if (!project) {
+      try {
+        project = await accessSecret('GOOGLE_CLOUD_PROJECT');
+      } catch (e: any) {
+        // ignore
+      }
     }
 
     // 4. Initialize Gemini API Client
     const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+      vertexai: true,
+      project: project || undefined,
+      location: location,
     });
 
     // 5. PII Sanitizer Agent

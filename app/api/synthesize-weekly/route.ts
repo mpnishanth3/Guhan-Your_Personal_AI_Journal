@@ -17,21 +17,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Missing or invalid "userId".' }, { status: 400 });
     }
 
-    let apiKey: string;
-    try {
-      apiKey = process.env.GEMINI_API_KEY || (await accessSecret('GEMINI_API_KEY'));
-    } catch (e: any) {
-      console.error('Secret Manager Error in /api/synthesize-weekly:', e);
-      return NextResponse.json({ error: 'Failed to retrieve AI credentials' }, { status: 500 });
-    }
+    let project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT;
+    const location = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
 
-    if (!apiKey) {
-      return NextResponse.json({ error: 'AI credentials missing or unavailable' }, { status: 500 });
+    if (!project) {
+      try {
+        project = await accessSecret('GOOGLE_CLOUD_PROJECT');
+      } catch (e: any) {
+        // ignore
+      }
     }
 
     const ai = new GoogleGenAI({
-      apiKey,
-      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+      vertexai: true,
+      project: project || undefined,
+      location: location,
     });
 
     const todayStr = clientDate || new Date().toISOString().split('T')[0];
@@ -92,11 +92,8 @@ ${formattedEntries || 'No recent entries provided for this week.'}`;
 
     let responseData: any = null;
     const models = [
-      'gemini-3.6-flash',
+      'gemini-2.5-flash',
       'gemini-3.5-flash',
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
-      'gemini-flash-latest',
     ];
 
     for (const model of models) {

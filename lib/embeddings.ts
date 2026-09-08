@@ -10,21 +10,21 @@ export async function generateTextEmbedding(text: string): Promise<number[]> {
     return new Array(768).fill(0);
   }
 
-  let apiKey: string;
-  try {
-    apiKey = process.env.GEMINI_API_KEY || (await accessSecret('GEMINI_API_KEY'));
-  } catch (e: any) {
-    console.error('Secret Manager Error in generateTextEmbedding:', e);
-    throw new Error('Failed to retrieve AI credentials for embedding generation');
-  }
+  let project = process.env.GOOGLE_CLOUD_PROJECT || process.env.GCLOUD_PROJECT;
+  const location = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
 
-  if (!apiKey) {
-    throw new Error('AI credentials missing or unavailable');
+  if (!project) {
+    try {
+      project = await accessSecret('GOOGLE_CLOUD_PROJECT');
+    } catch (e: any) {
+      // ignore
+    }
   }
 
   const ai = new GoogleGenAI({
-    apiKey,
-    httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+    vertexai: true,
+    project: project || undefined,
+    location: location,
   });
 
   const models = ['text-embedding-004', 'gemini-embedding-001', 'gemini-embedding-2'];
