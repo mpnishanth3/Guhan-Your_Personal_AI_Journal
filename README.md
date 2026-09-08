@@ -1,6 +1,6 @@
 # Guhan — Your Personal AI Journal & Reflection Sanctuary
 
-A highly secure, offline-capable, AI-powered journaling and mindfulness sanctuary application built with Next.js (App Router), Firebase Authentication, Cloud Firestore, Firebase Storage, and Google Cloud Gemini API.
+A highly secure, offline-capable, AI-powered journaling and mindfulness sanctuary application built with Next.js (App Router), Firebase Authentication, Cloud Firestore, Firebase Storage, and Google Cloud Vertex AI.
 
 ---
 
@@ -8,10 +8,10 @@ A highly secure, offline-capable, AI-powered journaling and mindfulness sanctuar
 
 To deploy this application securely, you must provision the following resources in Google Cloud:
 
-1. **Google Cloud Project**: An active Google Cloud project with billing enabled.
+1. **Google Cloud Project**: An active Google Cloud project with billing enabled (e.g., using your $300 trial credits).
 2. **Enabled APIs**: Ensure the following APIs are enabled in your Google Cloud Console:
    - Cloud Run API (`run.googleapis.com`)
-   - Secret Manager API (`secretmanager.googleapis.com`)
+   - Vertex AI API (`aiplatform.googleapis.com`)
    - Cloud Build API (`cloudbuild.googleapis.com`)
    - Cloud Firestore API (`firestore.googleapis.com`)
    - Cloud Storage API (`storage.googleapis.com`)
@@ -26,38 +26,39 @@ To deploy this application securely, you must provision the following resources 
 
 ---
 
-## 2. Secret Management Setup (Zero-Hardcoding)
+## 2. Dedicated Service Account Security (Zero-Trust)
 
-This application strictly adheres to zero-hardcoding hygiene. The `GEMINI_API_KEY` must be securely stored in Google Cloud Secret Manager and accessed at runtime.
+To maximize security, this application avoids using the default Compute Engine service account. Instead, you should provision a dedicated service account with the principle of least privilege.
 
-### Provision the Secret:
-
-**Linux / macOS / Bash:**
+### Create the Service Account:
 ```bash
-# 1. Create the secret container
-gcloud secrets create GEMINI_API_KEY --replication-policy="automatic"
-
-# 2. Add secret payload
-echo -n "YOUR_GEMINI_API_KEY" | gcloud secrets versions add GEMINI_API_KEY --data-file=-
+gcloud iam service-accounts create guhan-sa --display-name="Guhan Service Account"
 ```
 
-**Windows (PowerShell):**
-```powershell
-# 1. Create the secret container
-gcloud secrets create GEMINI_API_KEY --replication-policy="automatic"
-
-# 2. Add secret payload (using text file to prevent trailing newline)
-[System.IO.File]::WriteAllText("$pwd/gemini_key.tmp", "YOUR_GEMINI_API_KEY")
-gcloud secrets versions add GEMINI_API_KEY --data-file="gemini_key.tmp"
-Remove-Item "gemini_key.tmp"
-```
-
-### Grant Access to Cloud Run Service Account:
+### Grant Required Roles:
+The application requires the following four roles to function perfectly:
 ```bash
-# Grant the Cloud Run service account access to read the secret
-# Replace YOUR_PROJECT_NUMBER with your actual Google Cloud Project Number
-gcloud secrets add-iam-policy-binding GEMINI_API_KEY \
-  --member="serviceAccount:YOUR_PROJECT_NUMBER-compute@developer.gserviceaccount.com" \
+export PROJECT_ID=$(gcloud config get-value project)
+export SA_EMAIL="guhan-sa@${PROJECT_ID}.iam.gserviceaccount.com"
+
+# 1. Vertex AI User (for Gemini model access)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/aiplatform.user"
+
+# 2. Cloud Datastore User (for Firestore backend operations)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/datastore.user"
+
+# 3. Storage Object Viewer (for Firebase Storage media fetching)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/storage.objectViewer"
+
+# 4. Secret Manager Accessor (Optional, if using Secret Manager for other keys)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${SA_EMAIL}" \
   --role="roles/secretmanager.secretAccessor"
 ```
 
@@ -81,20 +82,20 @@ firebase deploy --only firestore:rules,storage
 
 The codebase includes an optimized multi-stage `Dockerfile` tailored for Next.js Standalone execution.
 
-To build and deploy the container service to Cloud Run in one command:
+To build and deploy the container service to Cloud Run in one command (using your dedicated service account and Vertex AI):
 
 ```bash
 gcloud run deploy guhan-ai-journal \
   --source . \
-  --region=us-central1 \
+  --region=asia-south1 \
   --allow-unauthenticated \
-  --port=8080 \
-  --labels=dev-tutorial=cloud-run-ai-challenge \
-  --set-secrets=GEMINI_API_KEY=GEMINI_API_KEY:latest \
-  --set-env-vars=GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,FIREBASE_PROJECT_ID=YOUR_PROJECT_ID,FIREBASE_STORAGE_BUCKET=YOUR_PROJECT_ID.firebasestorage.app
+  --port=3000 \
+  --service-account="guhan-sa@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+  --update-env-vars=GOOGLE_CLOUD_PROJECT=YOUR_PROJECT_ID,GOOGLE_CLOUD_LOCATION=asia-south1,FIREBASE_PROJECT_ID=YOUR_PROJECT_ID,FIREBASE_STORAGE_BUCKET=YOUR_PROJECT_ID.firebasestorage.app \
+  --labels=dev-tutorial=cloud-run-ai-challenge
 ```
 
-*(Replace `YOUR_PROJECT_ID` with your actual Google Cloud Project ID).*
+*(Replace `YOUR_PROJECT_ID` with your actual Google Cloud Project ID. You can also change the `GOOGLE_CLOUD_LOCATION` to `us-central1` if you prefer to access the latest experimental Gemini models).*
 
 ---
 
@@ -107,12 +108,12 @@ If you deployed using the command in Step 4, the label is already applied. You c
 ```bash
 gcloud run services update guhan-ai-journal \
   --update-labels=dev-tutorial=cloud-run-ai-challenge \
-  --region=us-central1
+  --region=asia-south1
 ```
 
 To confirm the label is applied:
 ```bash
 gcloud run services describe guhan-ai-journal \
-  --region=us-central1 \
+  --region=asia-south1 \
   --format="value(metadata.labels)"
 ```
