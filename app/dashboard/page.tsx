@@ -1134,7 +1134,7 @@ export default function DashboardPage() {
     <div suppressHydrationWarning className="min-h-screen bg-transparent text-[#e2e8f0] font-sans flex flex-col">
       <Navigation />
 
-      <main className="flex-1 max-w-6xl w-full mx-auto p-8 flex flex-col gap-8">
+      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 md:p-8 flex flex-col gap-8">
 
         {/* Section 1: Aggregated Yearly Stats Widgets */}
         <YearlyStatsWidgets
@@ -2137,7 +2137,7 @@ export default function DashboardPage() {
       {/* Add Entry Modal */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+          <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl max-w-[95vw] sm:max-w-lg w-full p-4 sm:p-6 shadow-2xl relative">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
               <h3 className="text-lg font-medium text-slate-200">New Journal Entry</h3>
               <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white p-1 rounded-lg">
@@ -2224,7 +2224,7 @@ export default function DashboardPage() {
       {/* Edit Entry Modal */}
       {isEditModalOpen && editingEntry && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+          <div className="bg-[#0a0a0c] border border-white/10 rounded-2xl max-w-[95vw] sm:max-w-lg w-full p-4 sm:p-6 shadow-2xl relative">
             <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
               <h3 className="text-lg font-medium text-slate-200">Edit Journal Entry</h3>
               <button onClick={() => setIsEditModalOpen(false)} className="text-slate-400 hover:text-white p-1 rounded-lg">
@@ -2310,7 +2310,7 @@ export default function DashboardPage() {
       {/* Date-Ranged Export Vault Modal Dialog (#050505 Dark Sanctuary Theme) */}
       {isExportModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-[#0a0a0c]/95 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl relative overflow-hidden">
+          <div className="bg-[#0a0a0c]/95 border border-white/10 rounded-2xl p-4 sm:p-6 w-full max-w-[95vw] sm:max-w-md shadow-2xl relative overflow-hidden">
             <div className="absolute -top-16 -right-16 w-36 h-36 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="flex items-center justify-between mb-5 pb-3 border-b border-white/5 relative z-10">
@@ -2439,7 +2439,7 @@ export default function DashboardPage() {
       {/* Revert Last Import Confirmation Modal */}
       {showRevertConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-[#0a0a0c] border border-rose-500/30 rounded-2xl p-6 max-w-md w-full shadow-2xl relative">
+          <div className="bg-[#0a0a0c] border border-rose-500/30 rounded-2xl p-4 sm:p-6 max-w-[95vw] sm:max-w-md w-full shadow-2xl relative">
             <div className="flex items-center justify-between pb-3 mb-3 border-b border-white/10">
               <div className="flex items-center gap-2 text-rose-400">
                 <AlertTriangle className="w-5 h-5" />
@@ -2506,7 +2506,7 @@ export default function DashboardPage() {
       {/* Account & Digital Vault Eradication Confirmation Modal */}
       {isEradicateModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="bg-[#0a0a0c] border border-rose-500/40 rounded-2xl p-6 max-w-md w-full shadow-2xl relative overflow-hidden">
+          <div className="bg-[#0a0a0c] border border-rose-500/40 rounded-2xl p-4 sm:p-6 max-w-[95vw] sm:max-w-md w-full shadow-2xl relative overflow-hidden">
             <div className="absolute -top-16 -right-16 w-36 h-36 bg-rose-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-white/10 relative z-10">
@@ -2593,7 +2593,7 @@ export default function DashboardPage() {
 
       {/* Lightweight Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300 max-w-sm sm:max-w-md w-full">
+        <div className="fixed bottom-4 sm:bottom-6 left-4 sm:left-auto right-4 sm:right-6 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300 max-w-[calc(100vw-2rem)] sm:max-w-md w-full">
           <div
             className={`p-4 rounded-2xl border backdrop-blur-xl shadow-2xl flex items-start gap-3 bg-[#0d0d12]/95 ${
               toast.type === 'success'
