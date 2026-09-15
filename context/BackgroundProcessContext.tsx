@@ -256,7 +256,7 @@ export function BackgroundProcessProvider({ children }: { children: React.ReactN
             
             // Limit Base64 string to ~700KB to comfortably avoid the 1MB (1,048,576 bytes) Firestore crash
             if (isLocalFallback && safeDownloadUrl && safeDownloadUrl.length > 700000) {
-              safeDownloadUrl = null;
+              safeDownloadUrl = undefined;
             }
             
             savePayload.media_url = safeDownloadUrl;
