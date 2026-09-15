@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { usePathname } from 'next/navigation';
 
 interface ColorRGB {
   r: number;
@@ -123,6 +124,8 @@ class BokehParticle {
 
 export function AntigravityBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pathname = usePathname();
+  const isStaticPage = pathname === '/journal';
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -182,15 +185,16 @@ export function AntigravityBackground() {
       ctx.fillStyle = ambientGlow;
       ctx.fillRect(0, 0, width, height);
 
-      // Switch to screen blending for luminous optical bokeh
-      ctx.globalCompositeOperation = 'screen';
+      if (!isStaticPage) {
+        ctx.globalCompositeOperation = 'screen';
 
-      for (let i = 0; i < particles.length; i++) {
-        particles[i].update(width, height, time);
-        particles[i].draw(ctx, time);
+        for (let i = 0; i < particles.length; i++) {
+          particles[i].update(width, height, time);
+          particles[i].draw(ctx, time);
+        }
+
+        animationFrameId = requestAnimationFrame(render);
       }
-
-      animationFrameId = requestAnimationFrame(render);
     };
 
     render();
@@ -205,7 +209,7 @@ export function AntigravityBackground() {
       window.removeEventListener('resize', handleResize);
       cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [isStaticPage]);
 
   return (
     <canvas

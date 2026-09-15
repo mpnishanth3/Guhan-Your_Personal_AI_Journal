@@ -172,7 +172,7 @@ export function GlobalBackgroundProcessIndicator() {
             {isProcessing && uploadProgress !== null && (
               <div className="mt-3 pt-2.5 border-t border-white/5 flex flex-col gap-1">
                 <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
-                  <span>Encrypting media upload</span>
+                  <span>Securing media upload</span>
                   <span>{uploadProgress}%</span>
                 </div>
                 <div className="w-full bg-white/10 h-1 rounded-full overflow-hidden">

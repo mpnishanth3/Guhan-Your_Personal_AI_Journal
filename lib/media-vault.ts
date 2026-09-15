@@ -165,7 +165,9 @@ export function compressImageToDataUrl(
       ctx.imageSmoothingQuality = 'high';
       ctx.drawImage(img, 0, 0, width, height);
 
-      const mime = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+      // Force output to image/jpeg to ensure the quality compression parameter is respected.
+      // PNGs do not support quality compression in toDataURL and can inflate massively.
+      const mime = 'image/jpeg';
       const dataUrl = canvas.toDataURL(mime, quality);
       resolve(dataUrl);
     };

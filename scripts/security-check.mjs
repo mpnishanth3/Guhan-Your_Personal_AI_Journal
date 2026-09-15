@@ -7,7 +7,7 @@
  * 1. Zero-Hardcoding: Scans for leaked secrets (API keys, private keys, service accounts).
  * 2. Sensitive Files: Ensures .env* (except .env.example) and credentials are not staged/tracked.
  * 3. Firestore Rules: Enforces isolated user tenancy and 7-day immutability grace period.
- * 4. Storage Rules: Enforces isolated media storage, MIME validation, and <= 5MB limit.
+ * 4. Storage Rules: Enforces isolated media storage, MIME validation, and <= 1MB limit.
  * 5. Cloud Run Container Security: Validates Dockerfile non-root user and configuration.
  * 6. TypeScript Compilation: Guarantees zero type errors prior to Cloud Run build.
  */
@@ -183,18 +183,18 @@ if (!fs.existsSync(storageRulesPath)) {
   logFail('storage.rules file missing from project root');
 } else {
   const sRules = fs.readFileSync(storageRulesPath, 'utf-8');
-  const hasMediaIsolation = /match\s+\/users\/\{userId\}\/media\/\{fileName\}/.test(sRules);
+  const hasPathIsolation = /match\s+\/users\/\{userId\}\/media\/\{fileName\}/.test(sRules);
   const hasMimeCheck = /contentType\.matches\('image\/.*'\)\s*\|\|\s*request\.resource\.contentType\.matches\('video\/.*'\)/.test(sRules);
-  const hasSizeLimit = /request\.resource\.size\s*<=\s*5242880/.test(sRules);
-  const hasUpdateBlocked = /allow\s+update:\s*if\s+false;/.test(sRules);
+  const hasSizeLimit = /request\.resource\.size\s*<=\s*1048576/.test(sRules);
+  const isImmutable = /allow\s+update:\s*if\s+false;/.test(sRules);
 
-  if (!hasMediaIsolation) logFail('storage.rules missing user media boundary rule');
-  if (!hasMimeCheck) logFail('storage.rules missing MIME type validation for media');
-  if (!hasSizeLimit) logFail('storage.rules missing <= 5MB size limit validation');
-  if (!hasUpdateBlocked) logFail('storage.rules must enforce immutable media: allow update: if false;');
+  if (!hasPathIsolation) logFail('storage.rules missing strict path isolation (match /users/{userId}/media)');
+  if (!hasMimeCheck) logFail('storage.rules missing MIME validation');
+  if (!hasSizeLimit) logFail('storage.rules missing <= 1MB size limit validation');
+  if (!isImmutable) logFail('storage.rules allows updates, violating immutability constraint');
 
-  if (hasMediaIsolation && hasMimeCheck && hasSizeLimit && hasUpdateBlocked) {
-    logPass('storage.rules verified: MIME check, 5MB limit & immutable attachments enforced.');
+  if (hasPathIsolation && hasMimeCheck && hasSizeLimit && isImmutable) {
+    logPass('storage.rules verified: MIME check, 1MB limit & immutable attachments enforced.');
   }
 }
 

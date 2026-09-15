@@ -12,8 +12,8 @@ import {
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { saveToMediaVault, compressImageToDataUrl } from '@/lib/media-vault';
 
-export const DAILY_QUOTA_BYTES = 5242880; // 5MB in bytes
-export const ENTRY_DATE_QUOTA_BYTES = 5242880; // Strict 5MB limit per logical calendar date
+export const DAILY_QUOTA_BYTES = 1048576; // 1MB in bytes
+export const ENTRY_DATE_QUOTA_BYTES = 1048576; // Strict 1MB limit per logical calendar date
 
 export function getTodayDateString(): string {
   const now = new Date();
@@ -104,17 +104,9 @@ export async function getDateMediaUsage(
       }
     });
 
-    // 2. Also check tracked usage record for this logical entry date
-    try {
-      const usageDocRef = doc(db, 'users', userId, 'usage', entryDate);
-      const usageSnap = await getDoc(usageDocRef);
-      if (usageSnap.exists()) {
-        const recorded = Number(usageSnap.data()?.bytesUploaded) || 0;
-        totalBytes = Math.max(totalBytes, recorded);
-      }
-    } catch (usageErr) {
-      console.warn('Notice querying usage doc:', usageErr);
-    }
+    // 2. Return strictly based on actual media stored in Firestore
+    // We removed the 'usage' tracking document because it caused permanent lockouts
+    // if an upload failed or if an entry was deleted.
 
     return totalBytes;
   } catch (error) {
@@ -124,7 +116,7 @@ export async function getDateMediaUsage(
 }
 
 /**
- * Pre-checks if attaching a file of size `fileSize` exceeds the 5MB allowance for `entryDate`.
+ * Pre-checks if attaching a file of size `fileSize` exceeds the 1MB allowance for `entryDate`.
  */
 export async function checkDateQuota(
   userId: string,
@@ -140,7 +132,7 @@ export async function checkDateQuota(
       allowed: false,
       currentUsage,
       remainingBytes,
-      message: 'Vault limit reached. Only 5MB of media is permitted per calendar date.',
+      message: 'Vault limit reached. Only 1MB of media is permitted per calendar date.',
     };
   }
 
@@ -202,9 +194,9 @@ export function readFileAsBase64(file: File): Promise<string> {
 }
 
 /**
- * Validates file MIME and size, enforces a strict 5MB quota against the logical Entry_Date,
+ * Validates file MIME and size, enforces a strict 1MB quota against the logical Entry_Date,
  * and then securely uploads the file to isolated Firebase Storage path: users/{userId}/media/{fileName}.
- * If the Storage bucket is unreachable/unprovisioned or times out, seamlessly falls back to the encrypted vault buffer.
+ * If the Storage bucket is unreachable/unprovisioned or times out, seamlessly falls back to the secured vault buffer.
  */
 export async function uploadZeroTrustMedia(
   userId: string,
@@ -226,9 +218,9 @@ export async function uploadZeroTrustMedia(
     throw new Error('Invalid file format. Only photo and video media are allowed in the sanctuary.');
   }
 
-  // 2. Individual file size check against 5MB quota
+  // 2. Individual file size check against 1MB quota
   if (file.size > ENTRY_DATE_QUOTA_BYTES) {
-    const error: any = new Error('Vault limit reached. Only 5MB of media is permitted per calendar date.');
+    const error: any = new Error('Vault limit reached. Only 1MB of media is permitted per calendar date.');
     error.code = 'QUOTA_EXCEEDED';
     throw error;
   }
@@ -236,44 +228,14 @@ export async function uploadZeroTrustMedia(
   // 3. Pre-Upload Validation (Gatekeeper): Check logical entry date usage
   const currentUsage = await getDateMediaUsage(userId, targetDate, excludeEntryId);
   if (currentUsage + file.size > ENTRY_DATE_QUOTA_BYTES) {
-    const error: any = new Error('Vault limit reached. Only 5MB of media is permitted per calendar date.');
+    const error: any = new Error('Vault limit reached. Only 1MB of media is permitted per calendar date.');
     error.code = 'QUOTA_EXCEEDED';
     throw error;
   }
 
-  // 4. Atomically check and increment usage in users/{userId}/usage/{entryDate}
-  const usageDocRef = doc(db, 'users', userId, 'usage', targetDate);
-  let newTotalBytes = currentUsage + file.size;
-
-  try {
-    await runTransaction(db, async (transaction) => {
-      const usageSnap = await transaction.get(usageDocRef);
-      const currentRecorded = usageSnap.exists() ? (Number(usageSnap.data()?.bytesUploaded) || 0) : 0;
-      const effectiveCurrent = Math.max(currentUsage, currentRecorded);
-
-      if (effectiveCurrent + file.size > ENTRY_DATE_QUOTA_BYTES) {
-        const error: any = new Error('Vault limit reached. Only 5MB of media is permitted per calendar date.');
-        error.code = 'QUOTA_EXCEEDED';
-        throw error;
-      }
-
-      newTotalBytes = effectiveCurrent + file.size;
-      transaction.set(
-        usageDocRef,
-        {
-          bytesUploaded: newTotalBytes,
-          entryDate: targetDate,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
-    });
-  } catch (txErr: any) {
-    if (txErr.code === 'QUOTA_EXCEEDED' || txErr.message?.includes('Vault limit reached')) {
-      throw txErr;
-    }
-    console.warn('Usage transaction warning, proceeding with validated upload:', txErr);
-  }
+  // 4. Usage transaction removed. Quota is now strictly enforced by the actual entries in Firestore.
+  // This prevents permanent lockouts if an upload is aborted or an entry is deleted.
+  const newTotalBytes = currentUsage + file.size;
 
   // 5. Read base64 buffer upfront for resilient multimodal AI synthesis & vault preservation
   let base64Data = '';
@@ -336,7 +298,7 @@ export async function uploadZeroTrustMedia(
         try {
           uploadTask.cancel();
         } catch {}
-        reject(new Error('Storage connection timed out. Preserving in encrypted local vault buffer.'));
+        reject(new Error('Storage connection timed out. Preserving in secured local vault buffer.'));
       }, 2500);
     });
 
@@ -375,7 +337,7 @@ export async function uploadZeroTrustMedia(
     };
   } catch (storageErr: any) {
     console.warn(
-      'Firebase Storage upload unavailable or unprovisioned (preserved securely in encrypted vault):',
+      'Firebase Storage upload unavailable or unprovisioned (preserved securely in secured vault):',
       storageErr?.message || storageErr
     );
     if (onProgress) onProgress(100);

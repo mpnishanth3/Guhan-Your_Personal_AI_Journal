@@ -239,7 +239,7 @@ export default function JournalPage() {
     // Pre-Upload Validation (Client-Side Gatekeeper) based strictly on logical Entry_Date
     const quotaResult = await checkDateQuota(user.uid, entryDate, file.size, loadedEntryId);
     if (!quotaResult.allowed) {
-      showToastNotification('Vault limit reached. Only 5MB of media is permitted per calendar date.', 'error');
+      showToastNotification('Vault limit reached. Only 1MB of media is permitted per calendar date.', 'error');
       return;
     }
 
@@ -569,7 +569,7 @@ export default function JournalPage() {
                   onClick={() => {
                     if (currentEditorLockStatus?.isLocked) return;
                     if (dateQuotaExhausted) {
-                      showToastNotification('Vault limit reached. Only 5MB of media is permitted per calendar date.', 'error');
+                      showToastNotification('Vault limit reached. Only 1MB of media is permitted per calendar date.', 'error');
                       return;
                     }
                     fileInputRef.current?.click();
@@ -583,8 +583,8 @@ export default function JournalPage() {
                     currentEditorLockStatus?.isLocked
                       ? 'Entry is permanently sealed (immutable)'
                       : dateQuotaExhausted
-                        ? 'Vault limit reached. Only 5MB of media is permitted per calendar date.'
-                        : 'Attach photo or video (<5MB)'
+                        ? 'Vault limit reached. Only 1MB of media is permitted per calendar date.'
+                        : 'Attach photo or video (<1MB)'
                   }
                 >
                   <Paperclip className="w-3.5 h-3.5" />
@@ -671,12 +671,12 @@ export default function JournalPage() {
                           ? `${(selectedFile.size / (1024 * 1024)).toFixed(2)} MB`
                           : matchingEntry?.media_size
                             ? `${(matchingEntry.media_size / (1024 * 1024)).toFixed(2)} MB`
-                            : 'Encrypted Media'}
+                            : 'Secured Media'}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-400 mt-0.5">
                       {uploadProgress !== null
-                        ? `Encrypting and transferring: ${uploadProgress}%`
+                        ? `Securing and transferring: ${uploadProgress}%`
                         : `Bound to logical date: ${entryDate}`}
                     </p>
                   </div>
@@ -702,11 +702,11 @@ export default function JournalPage() {
                 </div>
               </div>
 
-              {/* Minimalist Date Quota Progress Bar & Readout (Strict 5MB per calendar date) */}
+              {/* Minimalist Date Quota Progress Bar & Readout (Strict 1MB per calendar date) */}
               {(() => {
                 const totalForDate = dateMediaBytesUsed + (selectedFile ? selectedFile.size : 0);
                 const usedMB = (totalForDate / (1024 * 1024)).toFixed(1);
-                const pct = Math.min(100, Math.max(2, (totalForDate / 5242880) * 100));
+                const pct = Math.min(100, Math.max(2, (totalForDate / 1048576) * 100));
 
                 return (
                   <div className="pt-2 border-t border-white/5 flex flex-col gap-1.5">
@@ -716,7 +716,7 @@ export default function JournalPage() {
                         <span>Date Vault Quota:</span>
                       </span>
                       <span className="text-slate-300">
-                        <strong className="text-indigo-300">{usedMB}MB</strong> / 5.0MB secured for this date
+                        <strong className="text-indigo-300">{usedMB}MB</strong> / 1.0MB secured for this date
                       </span>
                     </div>
 
@@ -831,7 +831,7 @@ export default function JournalPage() {
                   </motion.div>
                 ) : (
                   <span className="text-xs font-mono text-slate-500">
-                    Encrypted end-to-end with zero-trust storage boundaries.
+                    Secured with zero-trust storage boundaries.
                   </span>
                 )}
               </AnimatePresence>
@@ -986,7 +986,7 @@ export default function JournalPage() {
                     ) : (
                       <ImageIcon className="w-3.5 h-3.5 text-indigo-400" />
                     )}
-                    <span>Encrypted Attachment</span>
+                    <span>Secured Attachment</span>
                   </div>
                   <MediaAttachment
                     entryId={viewingDetailEntry.id}

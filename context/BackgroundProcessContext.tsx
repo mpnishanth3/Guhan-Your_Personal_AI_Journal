@@ -9,7 +9,7 @@ import { getEntryLockStatus } from '@/lib/immutability';
 import { BulkImportRow } from '@/lib/csv';
 
 export const SUBMISSION_PROCESS_STEPS = [
-  'Encrypting local payload...',
+  'Securing local payload...',
   'Analyzing emotional trajectory...',
   'Synthesizing actionable insights...',
   'Securing in digital vault...',
@@ -127,6 +127,7 @@ export function BackgroundProcessProvider({ children }: { children: React.ReactN
             mimeType?: string;
             size?: number;
             base64?: string;
+            isFallback?: boolean;
           } | null = null;
 
           // Step 1: Upload media to isolated zero-trust Firebase Storage if file attached
@@ -147,10 +148,11 @@ export function BackgroundProcessProvider({ children }: { children: React.ReactN
                 mimeType: uploadRes.mimeType,
                 size: uploadRes.size,
                 base64: uploadRes.base64,
+                isFallback: uploadRes.isFallback,
               };
             } catch (uploadErr: any) {
               if (uploadErr.code === 'QUOTA_EXCEEDED' || uploadErr.message?.includes('Vault limit reached')) {
-                throw new Error('Vault limit reached: Only 5MB of media is permitted per calendar date.');
+                throw new Error('Vault limit reached: Only 1MB of media is permitted per calendar date.');
               }
               throw uploadErr;
             }
@@ -246,20 +248,31 @@ export function BackgroundProcessProvider({ children }: { children: React.ReactN
 
           if (uploadedMedia) {
             savePayload.media_path = uploadedMedia.storagePath;
-            savePayload.media_url = uploadedMedia.downloadUrl;
+            
+            // Critical fix: Allow saving Base64 data URLs to Firestore ONLY IF they are well under the 1MB limit.
+            // Since we fixed the JPEG compression, most images will be ~200KB and fit perfectly.
+            const isLocalFallback = uploadedMedia.isFallback || uploadedMedia.downloadUrl?.startsWith('data:');
+            let safeDownloadUrl = uploadedMedia.downloadUrl;
+            
+            // Limit Base64 string to ~700KB to comfortably avoid the 1MB (1,048,576 bytes) Firestore crash
+            if (isLocalFallback && safeDownloadUrl && safeDownloadUrl.length > 700000) {
+              safeDownloadUrl = null;
+            }
+            
+            savePayload.media_url = safeDownloadUrl;
             savePayload.media_type = uploadedMedia.mimeType;
             savePayload.media_name = uploadedMedia.fileName;
             savePayload.media_size = uploadedMedia.size;
             savePayload.attachments = [
               {
-                url: uploadedMedia.downloadUrl,
+                url: safeDownloadUrl || undefined,
                 path: uploadedMedia.storagePath,
                 name: uploadedMedia.fileName,
                 type: uploadedMedia.mimeType,
                 size: uploadedMedia.size,
               },
             ];
-            savePayload.mediaUrls = [uploadedMedia.downloadUrl];
+            savePayload.mediaUrls = safeDownloadUrl ? [safeDownloadUrl] : [];
           }
 
           // Step 5: Save or update in Firestore

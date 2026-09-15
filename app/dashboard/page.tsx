@@ -8,7 +8,7 @@ import { collection, query, orderBy, limit, getDocs, doc, deleteDoc, updateDoc, 
 import { eradicateUserData } from '@/lib/account';
 import { Navigation } from '@/components/navigation';
 import { format, subDays, isSameDay, parseISO } from 'date-fns';
-import { Loader2, Zap, BrainCircuit, CheckSquare, Search, Plus, Pencil, Trash2, X, Calendar, BookOpen, ListFilter, Download, Sparkles, CheckCircle2, CheckCircle, AlertCircle, FileSpreadsheet, Mic, Film, Image as ImageIcon, Lock, Unlock, RotateCcw, AlertTriangle, Archive, History, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Zap, BrainCircuit, CheckSquare, Search, Send, Plus, Pencil, Trash2, X, Calendar, BookOpen, ListFilter, Download, Sparkles, CheckCircle2, CheckCircle, AlertCircle, FileSpreadsheet, Mic, Film, Image as ImageIcon, Lock, Unlock, RotateCcw, AlertTriangle, Archive, History, Eye, EyeOff } from 'lucide-react';
 import { JournalCalendar } from '@/components/JournalCalendar';
 import { MonthlyBarChart } from '@/components/MonthlyBarChart';
 import { YearlyStatsWidgets } from '@/components/YearlyStatsWidgets';
@@ -174,6 +174,34 @@ export default function DashboardPage() {
     return null;
   }, [latestBatchId, user, recentImportBatches]);
 
+  // DSA Optimization: O(1) Hash Map for calendar lookups
+  const entriesByDate = useMemo(() => {
+    const map = new Map<string, any[]>();
+    entries.forEach((e) => {
+      const dateStr = getEntryLogicalDate(e);
+      if (dateStr) {
+        if (!map.has(dateStr)) {
+          map.set(dateStr, []);
+        }
+        map.get(dateStr)!.push(e);
+      }
+    });
+    return map;
+  }, [entries]);
+
+  // DSA Optimization: O(1) Hash Set for Streak Calculation
+  const entryDatesSet = useMemo(() => {
+    const set = new Set<string>();
+    entries.forEach((e) => {
+      const dateStr = getEntryLogicalDate(e);
+      if (dateStr) set.add(dateStr);
+      if (e.createdAt?.toDate) {
+        set.add(format(e.createdAt.toDate(), 'yyyy-MM-dd'));
+      }
+    });
+    return set;
+  }, [entries]);
+
   // Compute available years from entries
   const availableYears = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -301,38 +329,29 @@ export default function DashboardPage() {
     }
 
     let currentStreak = 0;
-    let currentDate = new Date();
-    let entryIndex = 0;
+    const currentDateStr = format(new Date(), 'yyyy-MM-dd');
+    const yesterdayStr = format(subDays(new Date(), 1), 'yyyy-MM-dd');
 
-    // Check if they posted today
-    const firstEntryDate = data[0].createdAt?.toDate() || new Date();
-    if (!isSameDay(firstEntryDate, currentDate) && !isSameDay(firstEntryDate, subDays(currentDate, 1))) {
+    // Build temporary Hash Set for this specific render data
+    // Because calculateMetrics is called before `entryDatesSet` useMemo can react
+    const dateSet = new Set<string>();
+    data.forEach((e) => {
+      const d = getEntryLogicalDate(e);
+      if (d) dateSet.add(d);
+      if (e.createdAt?.toDate) {
+        dateSet.add(format(e.createdAt.toDate(), 'yyyy-MM-dd'));
+      }
+    });
+
+    if (!dateSet.has(currentDateStr) && !dateSet.has(yesterdayStr)) {
       setStreak(0);
       return;
     }
 
-    // Basic consecutive day counter
-    let dateToCheck = firstEntryDate;
-    while (entryIndex < data.length) {
-      const entryDate = data[entryIndex].createdAt?.toDate();
-      if (!entryDate) {
-        entryIndex++;
-        continue;
-      }
-
-      if (isSameDay(entryDate, dateToCheck)) {
-        currentStreak++;
-        dateToCheck = subDays(dateToCheck, 1);
-
-        // Skip all other entries from the same day
-        while (entryIndex < data.length && isSameDay(data[entryIndex].createdAt?.toDate(), entryDate)) {
-          entryIndex++;
-        }
-      } else if (entryDate < dateToCheck) {
-        break; // Streak broken
-      } else {
-        entryIndex++;
-      }
+    let dateToCheckStr = dateSet.has(currentDateStr) ? currentDateStr : yesterdayStr;
+    while (dateSet.has(dateToCheckStr)) {
+      currentStreak++;
+      dateToCheckStr = format(subDays(parseISO(dateToCheckStr), 1), 'yyyy-MM-dd');
     }
 
     setStreak(currentStreak);
@@ -1289,7 +1308,7 @@ export default function DashboardPage() {
                     disabled={isChatting || !chatInput.trim()}
                     className="p-2 text-slate-400 hover:text-white disabled:opacity-50 transition-colors"
                   >
-                    {isChatting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    {isChatting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                   </button>
                 </div>
               </form>
@@ -1646,9 +1665,9 @@ export default function DashboardPage() {
               <div className="lg:col-span-7 xl:col-span-7 flex flex-col">
                 {selectedCalendarDate ? (
                   (() => {
-                    const matchedEntries = entries.filter((e) => {
-                      return getEntryLogicalDate(e) === selectedCalendarDate;
-                    });
+                    const matchedEntries = selectedCalendarDate 
+                      ? (entriesByDate.get(selectedCalendarDate) || []) 
+                      : [];
 
                     return (
                       <div className="bg-[#121214] border border-white/10 rounded-2xl p-6 flex flex-col min-h-[380px]">
@@ -2361,8 +2380,13 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    const dates = entries.map((e) => e.entry_date).filter(Boolean).sort();
-                    const earliest = dates.length > 0 ? dates[0] : '2020-01-01';
+                    let earliest = '2099-12-31';
+                    entries.forEach((e) => {
+                      const d = getEntryLogicalDate(e);
+                      if (d && d < earliest) earliest = d;
+                    });
+                    if (earliest === '2099-12-31') earliest = '2020-01-01';
+                    
                     setExportFromDate(earliest);
                     setExportToDate(format(new Date(), 'yyyy-MM-dd'));
                     setExportError('');

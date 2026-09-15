@@ -269,7 +269,7 @@ export function MediaAttachment({
             >
               <img
                 src={resolvedUrl}
-                alt={mediaName || 'Encrypted Vault Media'}
+                alt={mediaName || 'Secured Vault Media'}
                 className={`w-full transition-transform duration-300 group-hover/img:scale-[1.02] ${
                   variant === 'compact'
                     ? 'max-h-36 object-cover'
@@ -308,7 +308,7 @@ export function MediaAttachment({
               </div>
               <div>
                 <h4 className="text-sm font-medium text-slate-200 truncate max-w-xs sm:max-w-md">
-                  {mediaName || (isVideo ? 'Encrypted Video' : 'Encrypted Photo')}
+                  {mediaName || (isVideo ? 'Secured Video' : 'Secured Photo')}
                 </h4>
                 <p className="text-[10px] font-mono text-slate-500 uppercase">
                   {isVideo ? 'Vault Video Player' : 'Vault High-Resolution View'}
@@ -364,7 +364,7 @@ export function MediaAttachment({
           {/* Footer Note */}
           <div className="w-full max-w-5xl pt-3 text-center">
             <span className="text-[11px] font-mono text-slate-500">
-              Zero-Trust Encrypted Storage • Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-slate-300 text-[10px]">Esc</kbd> or click outside to dismiss
+              Zero-Trust Secured Storage • Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-slate-300 text-[10px]">Esc</kbd> or click outside to dismiss
             </span>
           </div>
         </div>
